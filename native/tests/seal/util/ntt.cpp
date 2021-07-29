@@ -72,64 +72,65 @@ namespace sealtest
         //     ASSERT_EQ(748001537669050592ULL, tables->get_from_root_powers(3).operand);
         // }
 
-        TEST(NTTTablesTest, NegacyclicNTTTest)
-        {
-            MemoryPoolHandle pool = MemoryPoolHandle::Global();
-            Pointer<NTTTables> tables;
-
-            int coeff_count_power = 1;
-            Modulus modulus(0xffffffffffc0001ULL);
-            ASSERT_NO_THROW(tables = allocate<NTTTables>(pool, coeff_count_power, modulus, pool));
-            auto poly(allocate_poly(2, 1, pool));
-            poly[0] = 0;
-            poly[1] = 0;
-            ntt_negacyclic_harvey(poly.get(), *tables);
-            ASSERT_EQ(0ULL, poly[0]);
-            ASSERT_EQ(0ULL, poly[1]);
-
-            poly[0] = 1;
-            poly[1] = 0;
-            ntt_negacyclic_harvey(poly.get(), *tables);
-            ASSERT_EQ(1ULL, poly[0]);
-            ASSERT_EQ(1ULL, poly[1]);
-
-            poly[0] = 1;
-            poly[1] = 1;
-            ntt_negacyclic_harvey(poly.get(), *tables);
-            ASSERT_EQ(288794978602139553ULL, poly[0]);
-            ASSERT_EQ(864126526004445282ULL, poly[1]);
-        }
-
-        // TEST(NTTTablesTest, InverseNegacyclicNTTTest)
+        // TEST(NTTTablesTest, NegacyclicNTTTest)
         // {
         //     MemoryPoolHandle pool = MemoryPoolHandle::Global();
         //     Pointer<NTTTables> tables;
 
-        //     int coeff_count_power = 3;
+        //     int coeff_count_power = 1;
         //     Modulus modulus(0xffffffffffc0001ULL);
         //     ASSERT_NO_THROW(tables = allocate<NTTTables>(pool, coeff_count_power, modulus, pool));
-        //     auto poly(allocate_zero_poly(800, 1, pool));
-        //     auto temp(allocate_zero_poly(800, 1, pool));
-
-        //     inverse_ntt_negacyclic_harvey(poly.get(), *tables);
-        //     for (size_t i = 0; i < 800; i++)
-        //     {
-        //         ASSERT_EQ(0ULL, poly[i]);
-        //     }
-
-        //     random_device rd;
-        //     for (size_t i = 0; i < 800; i++)
-        //     {
-        //         poly[i] = static_cast<uint64_t>(rd()) % modulus.value();
-        //         temp[i] = poly[i];
-        //     }
-
+        //     auto poly(allocate_poly(2, 1, pool));
+        //     poly[0] = 0;
+        //     poly[1] = 0;
         //     ntt_negacyclic_harvey(poly.get(), *tables);
-        //     inverse_ntt_negacyclic_harvey(poly.get(), *tables);
-        //     for (size_t i = 0; i < 800; i++)
-        //     {
-        //         ASSERT_EQ(temp[i], poly[i]);
-        //     }
+        //     ASSERT_EQ(0ULL, poly[0]);
+        //     ASSERT_EQ(0ULL, poly[1]);
+
+        //     poly[0] = 1;
+        //     poly[1] = 0;
+        //     ntt_negacyclic_harvey(poly.get(), *tables);
+        //     ASSERT_EQ(1ULL, poly[0]);
+        //     ASSERT_EQ(1ULL, poly[1]);
+
+        //     poly[0] = 1;
+        //     poly[1] = 1;
+        //     ntt_negacyclic_harvey(poly.get(), *tables);
+        //     ASSERT_EQ(288794978602139553ULL, poly[0]);
+        //     ASSERT_EQ(864126526004445282ULL, poly[1]);
         // }
+
+        TEST(NTTTablesTest, InverseNegacyclicNTTTest)
+        {
+            MemoryPoolHandle pool = MemoryPoolHandle::Global();
+            Pointer<NTTTables> tables;
+
+            int coeff_count_power = 2;
+            Modulus modulus(0xffffffffffc0001ULL);
+            ASSERT_NO_THROW(tables = allocate<NTTTables>(pool, coeff_count_power, modulus, pool));
+            auto poly(allocate_zero_poly(800, 1, pool));
+            auto temp(allocate_zero_poly(800, 1, pool));
+
+            inverse_ntt_negacyclic_harvey(poly.get(), *tables);
+            for (size_t i = 0; i < 800; i++)
+            {
+                ASSERT_EQ(0ULL, poly[i]);
+            }
+
+            random_device rd;
+            for (size_t i = 0; i < 800; i++)
+            {
+                poly[i] = static_cast<uint64_t>(rd()) % modulus.value();
+                temp[i] = poly[i];
+            }
+
+            ntt_negacyclic_harvey_special(poly.get(), *tables);
+            ntt_negacyclic_harvey(temp.get(), *tables);
+            // inverse_ntt_negacyclic_harvey(poly.get(), *tables);
+            for (size_t i = 0; i < 800; i++)
+            {
+                ASSERT_EQ(temp[i], poly[i]);
+            }
+        }
     } // namespace util
 } // namespace sealtest

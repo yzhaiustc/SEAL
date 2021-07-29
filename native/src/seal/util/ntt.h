@@ -197,6 +197,7 @@ namespace seal
             MemoryPoolHandle pool);
 
         void ntt_negacyclic_harvey_lazy(CoeffIter operand, const NTTTables &tables);
+        void ntt_negacyclic_harvey_lazy_special(CoeffIter operand, const NTTTables &tables);
 
         inline void ntt_negacyclic_harvey_lazy(
             RNSIter operand, std::size_t coeff_modulus_size, ConstNTTTablesIter tables)
@@ -261,6 +262,29 @@ namespace seal
                 }
             });
 #endif
+        }
+
+        inline void ntt_negacyclic_harvey_special(CoeffIter operand, const NTTTables &tables)
+        {
+            ntt_negacyclic_harvey_lazy_special(operand, tables);
+            // Finally maybe we need to reduce every coefficient modulo q, but we
+            // know that they are in the range [0, 4q).
+            // Since word size is controlled this is fast.
+            std::uint64_t modulus = tables.modulus().value();
+            std::uint64_t two_times_modulus = modulus * 2;
+            std::size_t n = std::size_t(1) << tables.coeff_count_power();
+
+            SEAL_ITERATE(operand, n, [&](auto &I) {
+                // Note: I must be passed to the lambda by reference.
+                if (I >= two_times_modulus)
+                {
+                    I -= two_times_modulus;
+                }
+                if (I >= modulus)
+                {
+                    I -= modulus;
+                }
+            });
         }
 
         inline void ntt_negacyclic_harvey(RNSIter operand, std::size_t coeff_modulus_size, ConstNTTTablesIter tables)

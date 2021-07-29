@@ -111,7 +111,7 @@ namespace seal
                 for (; m < (n >> 1); m <<= 1)
                 {
                     std::size_t offset = 0;
-                    if (gap < 4)
+                    if (1)
                     {
                         for (std::size_t i = 0; i < m; i++)
                         {
@@ -123,7 +123,7 @@ namespace seal
                                 u = arithmetic_.guard(*x);
                                 v = arithmetic_.mul_root(*y, r);
                                 *x++ = arithmetic_.add(u, v);
-                                //*y++ = arithmetic_.sub(u, v);
+                                *y++ = arithmetic_.sub(u, v);
                             }
                             offset += gap << 1;
                         }
@@ -191,6 +191,108 @@ namespace seal
                 }
             }
 
+
+            void transform_to_rev_special(
+                ValueType *values, int log_n, const RootType *roots, const ScalarType *scalar = nullptr) const
+            {
+                // constant transform size
+                size_t n = size_t(1) << log_n;
+                std::cout<<"forward NTT, n = "<<n<<std::endl;
+                // registers to hold temporary values
+                RootType r;
+                ValueType u;
+                ValueType v;
+                // pointers for faster indexing
+                ValueType *x = nullptr;
+                ValueType *y = nullptr;
+                // variables for indexing
+                std::size_t gap = n >> 1;
+                std::size_t m = 1;
+
+                for (; m < (n >> 1); m <<= 1)
+                {
+                    std::size_t offset = 0;
+                    if (1)
+                    {
+                        for (std::size_t i = 0; i < m; i++)
+                        {
+                            r = *++roots;
+                            x = values + offset;
+                            y = x + gap;
+                            for (std::size_t j = 0; j < gap; j++)
+                            {
+                                u = arithmetic_.guard(*x);
+                                v = arithmetic_.mul_root(*y, r);
+                                *x++ = arithmetic_.add(u, v);
+                                *y++ = arithmetic_.sub(u, v);
+                            }
+                            offset += gap << 1;
+                        }
+                    }
+                    else
+                    {
+                        for (std::size_t i = 0; i < m; i++)
+                        {
+                            r = *++roots;
+                            x = values + offset;
+                            y = x + gap;
+                            for (std::size_t j = 0; j < gap; j += 4)
+                            {
+                                u = arithmetic_.guard(*x);
+                                v = arithmetic_.mul_root(*y, r);
+                                *x++ = arithmetic_.add(u, v);
+                                *y++ = arithmetic_.sub(u, v);
+
+                                u = arithmetic_.guard(*x);
+                                v = arithmetic_.mul_root(*y, r);
+                                *x++ = arithmetic_.add(u, v);
+                                *y++ = arithmetic_.sub(u, v);
+
+                                u = arithmetic_.guard(*x);
+                                v = arithmetic_.mul_root(*y, r);
+                                *x++ = arithmetic_.add(u, v);
+                                *y++ = arithmetic_.sub(u, v);
+
+                                u = arithmetic_.guard(*x);
+                                v = arithmetic_.mul_root(*y, r);
+                                *x++ = arithmetic_.add(u, v);
+                                *y++ = arithmetic_.sub(u, v);
+                            }
+                            offset += gap << 1;
+                        }
+                    }
+                    gap >>= 1;
+                }
+
+                if (scalar != nullptr)
+                {
+                    RootType scaled_r;
+                    for (std::size_t i = 0; i < m; i++)
+                    {
+                        r = *++roots;
+                        scaled_r = arithmetic_.mul_root_scalar(r, *scalar);
+                        u = arithmetic_.mul_scalar(arithmetic_.guard(values[0]), *scalar);
+                        v = arithmetic_.mul_root(values[1], scaled_r);
+                        values[0] = arithmetic_.add(u, v);
+                        values[1] = arithmetic_.sub(u, v);
+                        values += 2;
+                    }
+                }
+                else
+                {
+                    for (std::size_t i = 0; i < m; i++)
+                    {
+                        r = *++roots;
+                        u = arithmetic_.guard(values[0]);
+                        v = arithmetic_.mul_root(values[1], r);
+                        values[0] = arithmetic_.add(u, v);
+                        values[1] = arithmetic_.sub(u, v);
+                        values += 2;
+                    }
+                }
+            }
+
+
             /**
             Performs in place a fast multiplication with the DWT matrix.
             Accesses to powers of root is coalesced.
@@ -221,7 +323,7 @@ namespace seal
                 for (; m > 1; m >>= 1)
                 {
                     std::size_t offset = 0;
-                    if (gap < 4)
+                    if (1)
                     {
                         for (std::size_t i = 0; i < m; i++)
                         {

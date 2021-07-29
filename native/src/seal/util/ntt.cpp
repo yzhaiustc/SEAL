@@ -207,5 +207,14 @@ namespace seal
                 operand.ptr(), tables.coeff_count_power(), tables.get_from_inv_root_powers(), &inv_degree_modulo);
 #endif
         }
+
+
+        void ntt_negacyclic_harvey_lazy_special(CoeffIter operand, const NTTTables &tables)
+        {
+
+            tables.ntt_handler().transform_to_rev_special(
+                operand.ptr(), tables.coeff_count_power(), tables.get_from_root_powers());
+        }
+
     } // namespace util
 } // namespace seal
