@@ -96,6 +96,7 @@ namespace seal
             {
                 // constant transform size
                 size_t n = size_t(1) << log_n;
+                std::cout<<"forward NTT, n = "<<n<<std::endl;
                 // registers to hold temporary values
                 RootType r;
                 ValueType u;
@@ -122,7 +123,7 @@ namespace seal
                                 u = arithmetic_.guard(*x);
                                 v = arithmetic_.mul_root(*y, r);
                                 *x++ = arithmetic_.add(u, v);
-                                *y++ = arithmetic_.sub(u, v);
+                                //*y++ = arithmetic_.sub(u, v);
                             }
                             offset += gap << 1;
                         }
@@ -202,8 +203,10 @@ namespace seal
             void transform_from_rev(
                 ValueType *values, int log_n, const RootType *roots, const ScalarType *scalar = nullptr) const
             {
+                
                 // constant transform size
                 size_t n = size_t(1) << log_n;
+                std::cout<<"backward NTT, n = "<<n<<std::endl;
                 // registers to hold temporary values
                 RootType r;
                 ValueType u;
