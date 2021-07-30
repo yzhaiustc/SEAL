@@ -166,7 +166,7 @@ namespace seal
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
                 // registers to hold temporary values
-                RootType r[2];
+                RootType r1, r2;
                 ValueType u;
                 ValueType v;
                 // pointers for faster indexing
@@ -185,16 +185,19 @@ namespace seal
                 ValueType dx0,dx1,dx2,dx3;
                 //for (; m < (n >> 1); m <<= 1)
                 
-                for (; m < (n);total_r += m, m <<= 2, gap >>= 2, log_gap -= 2)
+                for (; m < (n);total_r += ((m<<1) + m), m <<= 2, gap >>= 2, log_gap -= 2)
                 {
-                    for (std::size_t ind = 0; ind < (n>>1); ind++){
+                    for (std::size_t ind = 0; ind < (n>>2); ind++){
+                        auto ind1 = ((ind >> log_gap) << (log_gap + 1)) + (ind & (gap - 1));
+                        auto ind2 = ind1 + gap;
+                        auto i1 = (ind1) >> (log_gap+1);
+                        auto i2 = (ind2) >> (log_gap+1);
+                        auto j = ind1 & ((gap<<1) - 1);
+                        auto offset = (i1 << ((log_gap+1) + 1)) + j;
+                        r1 = roots[i1+total_r];
+                        r2 = roots[i2+total_r];
                         
-                        auto i = ind >> (log_gap+1);
-                        auto j = ind & ((gap<<1) - 1);
-                        auto offset = (i << ((log_gap+1) + 1)) + j;
-                        r[0] = roots[i+total_r];
-                        r[1] = roots[(ind >> log_gap)+total_r];
-                        //std::cout<<"m = "<<m<<", gap = "<<gap<<", total_r = "<<total_r<<", ind = "<<ind<<", i = "<<i<<", j = "<<j<<", x_offset = "<<offset<<", y_offset = "<<(offset+gap)<<", r_op = "<<(total_r+i)<<std::endl;
+                        std::cout<<"r1, gap = "<<gap<<", total_r = "<<total_r<<", {"<<offset<<","<<(offset+gap)<<","<<(offset+gap*2)<<","<<(offset+gap*3)<<"},"<<", ind = "<<ind<<", ind1 = "<<ind1<<", ind2 = "<<ind2<<", r1 = "<<(i1+total_r)<<", r2 = "<<(i2+total_r)<<std::endl;
                         x0 =  values + offset;
                         x1 = x0 + gap;
                         x2 = x1 + gap;
@@ -203,23 +206,28 @@ namespace seal
                         dx0 = *x0; dx1 = *x1; dx2 = *x2; dx3 = *x3;
                         // inner round 1
                         u = arithmetic_.guard(dx0);
-                        v = arithmetic_.mul_root(dx2, r[0]);
+                        v = arithmetic_.mul_root(dx2, r1);
                         dx0 = arithmetic_.add(u, v);
                         dx2 = arithmetic_.sub(u, v);
 
                         u = arithmetic_.guard(dx1);
-                        v = arithmetic_.mul_root(dx3, r[0]);
+                        v = arithmetic_.mul_root(dx3, r2);
                         dx1 = arithmetic_.add(u, v);
                         dx3 = arithmetic_.sub(u, v);
 
                         // inner round 2
+                        i1 = (ind1) >> log_gap;
+                        i2 = (ind2) >> log_gap;
+                        r1 = roots[i1+total_r+m];
+                        r2 = roots[i2+total_r+m];
+                        std::cout<<"round 2, ind = "<<ind<<", total_r = "<<total_r<<", r1 = "<<(i1+total_r+m)<<", r2 = "<<(i2+total_r+m)<<std::endl;
                         u = arithmetic_.guard(dx0);
-                        v = arithmetic_.mul_root(dx1, r[1]);
+                        v = arithmetic_.mul_root(dx1, r1);
                         *x0 = arithmetic_.add(u, v);
                         *x1 = arithmetic_.sub(u, v);
 
                         u = arithmetic_.guard(dx2);
-                        v = arithmetic_.mul_root(dx3, r[1]);
+                        v = arithmetic_.mul_root(dx3, r2);
                         *x2 = arithmetic_.add(u, v);
                         *x3 = arithmetic_.sub(u, v);
                     }
