@@ -166,78 +166,62 @@ namespace seal
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
                 // registers to hold temporary values
-                RootType r;
+                RootType r[2];
                 ValueType u;
                 ValueType v;
                 // pointers for faster indexing
-                ValueType *x = nullptr;
-                ValueType *y = nullptr;
+                ValueType *x0 = nullptr;
+                ValueType *x1 = nullptr;
+                ValueType *x2 = nullptr;
+                ValueType *x3 = nullptr;
                 // variables for indexing
-                std::size_t gap = n >> 1;
-                std::size_t log_gap = log_n - 1;
+
+                std::size_t gap = n >> 2;
+                std::size_t log_gap = log_n - 2;//radix 4
                 std::size_t m = 1;
                 std::size_t total_r = 1;
-                //specialized implementation
-                // ValueType *x0, *x1, *x2, *x3;
-                // x0 = values;
-                // x1 = values + 1;
-                // x2 = values + 2;
-                // x3 = values + 3;
 
-                // u = arithmetic_.guard(*x0);
-                // v = arithmetic_.mul_root(*x2, roots[1]);
-                // *x0 = arithmetic_.add(u, v);
-                // *x2 = arithmetic_.sub(u, v);
-
-
-                // u = arithmetic_.guard(*x1);
-                // v = arithmetic_.mul_root(*x3, roots[1]);
-                // *x1 = arithmetic_.add(u, v);
-                // *x3 = arithmetic_.sub(u, v);
-
-
-                // u = arithmetic_.guard(*x0);
-                // v = arithmetic_.mul_root(*x1, roots[2]);
-                // *x0 = arithmetic_.add(u, v);
-                // *x1 = arithmetic_.sub(u, v);
-
-
-                // u = arithmetic_.guard(*x2);
-                // v = arithmetic_.mul_root(*x3, roots[3]);
-                // *x2 = arithmetic_.add(u, v);
-                // *x3 = arithmetic_.sub(u, v);
-
+                // vars for high radix
+                ValueType dx0,dx1,dx2,dx3;
                 //for (; m < (n >> 1); m <<= 1)
                 
-                for (; m < (n);total_r += m, m <<= 1, gap >>= 1, log_gap--)
+                for (; m < (n);total_r += m, m <<= 2, gap >>= 2, log_gap -= 2)
                 {
-                    // std::size_t offset = 0;
-                    //     for (std::size_t i = 0; i < m; i++)
-                    //     {
-                    //         r = *++roots;
-                    //         x = values + offset;
-                    //         y = x + gap;
-                    //         for (std::size_t j = 0; j < gap; j++)
-                    //         {
-                    //             u = arithmetic_.guard(*x);
-                    //             v = arithmetic_.mul_root(*y, r);
-                    //             *x++ = arithmetic_.add(u, v);
-                    //             *y++ = arithmetic_.sub(u, v);
-                    //         }
-                    //         offset += gap << 1;
-                    //     }
                     for (std::size_t ind = 0; ind < (n>>1); ind++){
-                        auto i = ind >> log_gap;
-                        auto j = ind & (gap - 1);
-                        auto offset = (i << (log_gap + 1)) + j;
-                        r = roots[i+total_r];
+                        
+                        auto i = ind >> (log_gap+1);
+                        auto j = ind & ((gap<<1) - 1);
+                        auto offset = (i << ((log_gap+1) + 1)) + j;
+                        r[0] = roots[i+total_r];
+                        r[1] = roots[(ind >> log_gap)+total_r];
                         //std::cout<<"m = "<<m<<", gap = "<<gap<<", total_r = "<<total_r<<", ind = "<<ind<<", i = "<<i<<", j = "<<j<<", x_offset = "<<offset<<", y_offset = "<<(offset+gap)<<", r_op = "<<(total_r+i)<<std::endl;
-                        x =  values + offset;
-                        y = x + gap;
-                        u = arithmetic_.guard(*x);
-                        v = arithmetic_.mul_root(*y, r);
-                        *x = arithmetic_.add(u, v);
-                        *y = arithmetic_.sub(u, v);
+                        x0 =  values + offset;
+                        x1 = x0 + gap;
+                        x2 = x1 + gap;
+                        x3 = x2 + gap;
+
+                        dx0 = *x0; dx1 = *x1; dx2 = *x2; dx3 = *x3;
+                        // inner round 1
+                        u = arithmetic_.guard(dx0);
+                        v = arithmetic_.mul_root(dx2, r[0]);
+                        dx0 = arithmetic_.add(u, v);
+                        dx2 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx1);
+                        v = arithmetic_.mul_root(dx3, r[0]);
+                        dx1 = arithmetic_.add(u, v);
+                        dx3 = arithmetic_.sub(u, v);
+
+                        // inner round 2
+                        u = arithmetic_.guard(dx0);
+                        v = arithmetic_.mul_root(dx1, r[1]);
+                        *x0 = arithmetic_.add(u, v);
+                        *x1 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx2);
+                        v = arithmetic_.mul_root(dx3, r[1]);
+                        *x2 = arithmetic_.add(u, v);
+                        *x3 = arithmetic_.sub(u, v);
                     }
                 }
 

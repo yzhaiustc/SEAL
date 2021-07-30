@@ -105,7 +105,7 @@ namespace sealtest
             MemoryPoolHandle pool = MemoryPoolHandle::Global();
             Pointer<NTTTables> tables;
 
-            int coeff_count_power = 10;
+            int coeff_count_power = 4;
             Modulus modulus(0xffffffffffc0001ULL);
             ASSERT_NO_THROW(tables = allocate<NTTTables>(pool, coeff_count_power, modulus, pool));
             auto poly(allocate_zero_poly( (1<<coeff_count_power), 1, pool));
