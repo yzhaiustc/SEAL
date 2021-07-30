@@ -105,20 +105,20 @@ namespace sealtest
             MemoryPoolHandle pool = MemoryPoolHandle::Global();
             Pointer<NTTTables> tables;
 
-            int coeff_count_power = 2;
+            int coeff_count_power = 10;
             Modulus modulus(0xffffffffffc0001ULL);
             ASSERT_NO_THROW(tables = allocate<NTTTables>(pool, coeff_count_power, modulus, pool));
-            auto poly(allocate_zero_poly(800, 1, pool));
-            auto temp(allocate_zero_poly(800, 1, pool));
+            auto poly(allocate_zero_poly( (1<<coeff_count_power), 1, pool));
+            auto temp(allocate_zero_poly((1<<coeff_count_power), 1, pool));
 
             inverse_ntt_negacyclic_harvey(poly.get(), *tables);
-            for (size_t i = 0; i < 800; i++)
+            for (size_t i = 0; i < (1<<coeff_count_power); i++)
             {
                 ASSERT_EQ(0ULL, poly[i]);
             }
 
             random_device rd;
-            for (size_t i = 0; i < 800; i++)
+            for (size_t i = 0; i < (1<<coeff_count_power); i++)
             {
                 poly[i] = static_cast<uint64_t>(rd()) % modulus.value();
                 temp[i] = poly[i];
@@ -127,7 +127,7 @@ namespace sealtest
             ntt_negacyclic_harvey_special(poly.get(), *tables);
             ntt_negacyclic_harvey(temp.get(), *tables);
             // inverse_ntt_negacyclic_harvey(poly.get(), *tables);
-            for (size_t i = 0; i < 800; i++)
+            for (size_t i = 0; i < (1<<coeff_count_power); i++)
             {
                 ASSERT_EQ(temp[i], poly[i]);
             }
