@@ -107,9 +107,8 @@ namespace seal
                 // variables for indexing
                 std::size_t gap = n >> 1;
                 std::size_t m = 1;
-
-                //for (; m < (n >> 1); m <<= 1)
-                for (; m < (n); m <<= 1)
+                //for (; m < (n); m <<= 1)
+                for (; m < (n >> 1); m <<= 1)
                 {
                     std::size_t offset = 0;
                         for (std::size_t i = 0; i < m; i++)
@@ -130,38 +129,82 @@ namespace seal
                     gap >>= 1;
                 }
 
-                // if (scalar != nullptr)
-                // {
-                //     RootType scaled_r;
-                //     for (std::size_t i = 0; i < m; i++)
-                //     {
-                //         r = *++roots;
-                //         scaled_r = arithmetic_.mul_root_scalar(r, *scalar);
-                //         u = arithmetic_.mul_scalar(arithmetic_.guard(values[0]), *scalar);
-                //         v = arithmetic_.mul_root(values[1], scaled_r);
-                //         values[0] = arithmetic_.add(u, v);
-                //         values[1] = arithmetic_.sub(u, v);
-                //         values += 2;
-                //     }
-                // }
-                // else
-                // {
-                //     for (std::size_t i = 0; i < m; i++)
-                //     {
-                //         r = *++roots;
-                //         u = arithmetic_.guard(values[0]);
-                //         v = arithmetic_.mul_root(values[1], r);
-                //         values[0] = arithmetic_.add(u, v);
-                //         values[1] = arithmetic_.sub(u, v);
-                //         values += 2;
-                //     }
-                // }
+                if (scalar != nullptr)
+                {
+                    RootType scaled_r;
+                    for (std::size_t i = 0; i < m; i++)
+                    {
+                        r = *++roots;
+                        scaled_r = arithmetic_.mul_root_scalar(r, *scalar);
+                        u = arithmetic_.mul_scalar(arithmetic_.guard(values[0]), *scalar);
+                        v = arithmetic_.mul_root(values[1], scaled_r);
+                        values[0] = arithmetic_.add(u, v);
+                        values[1] = arithmetic_.sub(u, v);
+                        values += 2;
+                    }
+                }
+                else
+                {
+                    for (std::size_t i = 0; i < m; i++)
+                    {
+                        r = *++roots;
+                        u = arithmetic_.guard(values[0]);
+                        v = arithmetic_.mul_root(values[1], r);
+                        values[0] = arithmetic_.add(u, v);
+                        values[1] = arithmetic_.sub(u, v);
+                        values += 2;
+                    }
+                }
             }
 
 
             void transform_to_rev_special(
                 ValueType *values, int log_n, const RootType *roots, const ScalarType *scalar = nullptr) const
             {
+                // constant transform size
+                size_t n = size_t(1) << log_n;
+                std::cout<<"forward NTT, n = "<<n<<std::endl;
+                // registers to hold temporary values
+                RootType r;
+                ValueType u;
+                ValueType v;
+                // pointers for faster indexing
+                ValueType *x = nullptr;
+                ValueType *y = nullptr;
+                // variables for indexing
+                std::size_t gap = n >> 1;
+                std::size_t m = 1;
+
+                //specialized implementation
+                ValueType *x0, *x1, *x2, *x3;
+                x0 = values;
+                x1 = values + 1;
+                x2 = values + 2;
+                x3 = values + 3;
+
+                u = arithmetic_.guard(*x0);
+                v = arithmetic_.mul_root(*x2, roots[1]);
+                *x0 = arithmetic_.add(u, v);
+                *x2 = arithmetic_.sub(u, v);
+
+
+                u = arithmetic_.guard(*x1);
+                v = arithmetic_.mul_root(*x3, roots[1]);
+                *x1 = arithmetic_.add(u, v);
+                *x3 = arithmetic_.sub(u, v);
+
+
+                u = arithmetic_.guard(*x0);
+                v = arithmetic_.mul_root(*x1, roots[2]);
+                *x0 = arithmetic_.add(u, v);
+                *x1 = arithmetic_.sub(u, v);
+
+
+                u = arithmetic_.guard(*x2);
+                v = arithmetic_.mul_root(*x3, roots[3]);
+                *x2 = arithmetic_.add(u, v);
+                *x3 = arithmetic_.sub(u, v);
+#if 0
                 // constant transform size
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
@@ -197,7 +240,7 @@ namespace seal
                         r1 = roots[i1+total_r];
                         r2 = roots[i2+total_r];
                         
-                        std::cout<<"r1, gap = "<<gap<<", total_r = "<<total_r<<", {"<<offset<<","<<(offset+gap)<<","<<(offset+gap*2)<<","<<(offset+gap*3)<<"},"<<", ind = "<<ind<<", ind1 = "<<ind1<<", ind2 = "<<ind2<<", r1 = "<<(i1+total_r)<<", r2 = "<<(i2+total_r)<<std::endl;
+                        //std::cout<<"r1, gap = "<<gap<<", total_r = "<<total_r<<", {"<<offset<<","<<(offset+gap)<<","<<(offset+gap*2)<<","<<(offset+gap*3)<<"},"<<", ind = "<<ind<<", ind1 = "<<ind1<<", ind2 = "<<ind2<<", r1 = "<<(i1+total_r)<<", r2 = "<<(i2+total_r)<<std::endl;
                         x0 =  values + offset;
                         x1 = x0 + gap;
                         x2 = x1 + gap;
@@ -220,7 +263,7 @@ namespace seal
                         i2 = (ind2) >> log_gap;
                         r1 = roots[i1+total_r+m];
                         r2 = roots[i2+total_r+m];
-                        std::cout<<"round 2, ind = "<<ind<<", total_r = "<<total_r<<", r1 = "<<(i1+total_r+m)<<", r2 = "<<(i2+total_r+m)<<std::endl;
+                        //std::cout<<"round 2, ind = "<<ind<<", total_r = "<<total_r<<", r1 = "<<(i1+total_r+m)<<", r2 = "<<(i2+total_r+m)<<std::endl;
                         u = arithmetic_.guard(dx0);
                         v = arithmetic_.mul_root(dx1, r1);
                         *x0 = arithmetic_.add(u, v);
@@ -259,6 +302,7 @@ namespace seal
                 //         values += 2;
                 //     }
                 // }
+#endif
             }
 
 
