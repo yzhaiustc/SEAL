@@ -161,6 +161,7 @@ namespace seal
             void transform_to_rev_special(
                 ValueType *values, int log_n, const RootType *roots, const ScalarType *scalar = nullptr) const
             {
+#if 0
                 // constant transform size
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
@@ -177,34 +178,28 @@ namespace seal
 
                 //specialized implementation
                 ValueType *x0, *x1, *x2, *x3;
+                ValueType dx0, dx1, dx2, dx3;
                 x0 = values;
                 x1 = values + 1;
                 x2 = values + 2;
                 x3 = values + 3;
 
-                u = arithmetic_.guard(*x0);
-                v = arithmetic_.mul_root(*x2, roots[1]);
-                *x0 = arithmetic_.add(u, v);
-                *x2 = arithmetic_.sub(u, v);
+                dx0 = *x0; dx1 = *x1; dx2 = *x2; dx3 = *x3;
+                ValueType gx0, p2f2, p1f1, p3f1, p1f3, p3f3;
+                gx0 = arithmetic_.guard(dx0);
+                p2f2 = arithmetic_.mul_root(dx2, roots[1]);
+                p1f1 = arithmetic_.mul_root(dx1, roots[2]);
+                p3f1 = arithmetic_.mul_root(dx1, roots[3]);
+                p1f3 = arithmetic_.mul_root(dx3, roots[2]);
+                p3f3 = arithmetic_.mul_root(dx3, roots[3]);
+                
+                *x0 = arithmetic_.add(arithmetic_.guard(gx0 + p2f2), arithmetic_.guard(p1f1 + p3f3));
+                *x1 = arithmetic_.guard(arithmetic_.sub(gx0, p1f1)) + arithmetic_.guard(arithmetic_.sub(p2f2, p3f3));
+                *x2 = arithmetic_.guard(arithmetic_.sub(gx0, p2f2)) + arithmetic_.guard(arithmetic_.add(p3f1, p1f3));
+                *x3 = arithmetic_.sub(arithmetic_.guard(arithmetic_.sub(gx0, p2f2)), arithmetic_.guard(arithmetic_.add(p3f1, p1f3)));
 
 
-                u = arithmetic_.guard(*x1);
-                v = arithmetic_.mul_root(*x3, roots[1]);
-                *x1 = arithmetic_.add(u, v);
-                *x3 = arithmetic_.sub(u, v);
-
-
-                u = arithmetic_.guard(*x0);
-                v = arithmetic_.mul_root(*x1, roots[2]);
-                *x0 = arithmetic_.add(u, v);
-                *x1 = arithmetic_.sub(u, v);
-
-
-                u = arithmetic_.guard(*x2);
-                v = arithmetic_.mul_root(*x3, roots[3]);
-                *x2 = arithmetic_.add(u, v);
-                *x3 = arithmetic_.sub(u, v);
-#if 0
+#else
                 // constant transform size
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
