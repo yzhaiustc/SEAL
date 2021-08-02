@@ -200,6 +200,8 @@ namespace seal
 
 
 #else
+
+#if 0
                 // constant transform size
                 size_t n = size_t(1) << log_n;
                 std::cout<<"forward NTT, n = "<<n<<std::endl;
@@ -270,6 +272,148 @@ namespace seal
                         *x3 = arithmetic_.sub(u, v);
                     }
                 }
+
+#else
+
+                size_t n = size_t(1) << log_n;
+                std::cout<<"forward NTT, n = "<<n<<std::endl;
+                // registers to hold temporary values
+                RootType r0, r1, r2, r3;
+                ValueType u;
+                ValueType v;
+                // pointers for faster indexing
+                ValueType *x0 = nullptr;
+                ValueType *x1 = nullptr;
+                ValueType *x2 = nullptr;
+                ValueType *x3 = nullptr;
+                ValueType *x4 = nullptr;
+                ValueType *x5 = nullptr;
+                ValueType *x6 = nullptr;
+                ValueType *x7 = nullptr;
+                // variables for indexing
+
+                std::size_t gap = n >> 3;
+                std::size_t log_gap = log_n - 3;//radix 4
+                std::size_t m = 1;
+                std::size_t total_r = 1;
+
+                // vars for high radix
+                ValueType dx0,dx1,dx2,dx3,dx4,dx5,dx6,dx7;
+                //for (; m < (n >> 1); m <<= 1)
+                
+                for (; m < (n);total_r += ((m<<1) + (m<<2) + m), m <<= 3, gap >>= 3, log_gap -= 3)
+                {
+                    for (std::size_t ind = 0; ind < (n>>3); ind++){
+                        auto ind1 = ((ind >> log_gap) << (log_gap + 2)) + (ind & (gap - 1));
+                        auto ind2 = ind1 + gap;
+                        auto ind3 = ind2 + gap;
+                        auto ind4 = ind3 + gap;
+                        auto i1 = (ind1) >> (log_gap+2);
+                        auto i2 = (ind2) >> (log_gap+2);
+                        auto i3 = (ind3) >> (log_gap+2);
+                        auto i4 = (ind4) >> (log_gap+2);
+                        auto j = ind1 & ((gap<<2) - 1);
+                        auto offset = (i1 << ((log_gap+2) + 1)) + j;
+                        r0 = roots[i1+total_r];
+                        r1 = roots[i2+total_r];
+                        r2 = roots[i3+total_r];
+                        r3 = roots[i4+total_r];
+                        
+                        //std::cout<<"r1, gap = "<<gap<<", total_r = "<<total_r<<", {"<<offset<<","<<(offset+gap)<<","<<(offset+gap*2)<<","<<(offset+gap*3)<<","<<(offset+gap*4)<<","<<(offset+gap*5)<<","<<(offset+gap*6)<<","<<(offset+gap*7)<<"}"<<", ind1{"<<ind1<<","<<ind2<<","<<ind3<<","<<ind4<<"}\n";
+                        x0 =  values + offset;
+                        x1 = x0 + gap;
+                        x2 = x1 + gap;
+                        x3 = x2 + gap;
+
+                        x4 = x3 + gap;
+                        x5 = x4 + gap;
+                        x6 = x5 + gap;
+                        x7 = x6 + gap;
+
+                        dx0 = *x0; dx1 = *x1; dx2 = *x2; dx3 = *x3;
+                        dx4 = *x4; dx5 = *x5; dx6 = *x6; dx7 = *x7;
+                        // inner round 1
+                        u = arithmetic_.guard(dx0);
+                        v = arithmetic_.mul_root(dx4, r0);
+                        dx0 = arithmetic_.add(u, v);
+                        dx4 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx1);
+                        v = arithmetic_.mul_root(dx5, r1);
+                        dx1 = arithmetic_.add(u, v);
+                        dx5 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx2);
+                        v = arithmetic_.mul_root(dx6, r2);
+                        dx2 = arithmetic_.add(u, v);
+                        dx6 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx3);
+                        v = arithmetic_.mul_root(dx7, r3);
+                        dx3 = arithmetic_.add(u, v);
+                        dx7 = arithmetic_.sub(u, v);
+
+                        // inner round 2
+                        i1 = (ind1) >> (log_gap+1);
+                        i2 = (ind2) >> (log_gap+1);
+                        i3 = (ind3) >> (log_gap+1);
+                        i4 = (ind4) >> (log_gap+1);
+                        r0 = roots[i1+total_r+m];
+                        r1 = roots[i2+total_r+m];
+                        r2 = roots[i3+total_r+m];
+                        r3 = roots[i4+total_r+m];
+                        u = arithmetic_.guard(dx0);
+                        v = arithmetic_.mul_root(dx2, r0);
+                        dx0 = arithmetic_.add(u, v);
+                        dx2 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx1);
+                        v = arithmetic_.mul_root(dx3, r1);
+                        dx1 = arithmetic_.add(u, v);
+                        dx3 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx4);
+                        v = arithmetic_.mul_root(dx6, r2);
+                        dx4 = arithmetic_.add(u, v);
+                        dx6 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx5);
+                        v = arithmetic_.mul_root(dx7, r3);
+                        dx5 = arithmetic_.add(u, v);
+                        dx7 = arithmetic_.sub(u, v);
+
+                        // inner round 3
+                        i1 = (ind1) >> (log_gap);
+                        i2 = (ind2) >> (log_gap);
+                        i3 = (ind3) >> (log_gap);
+                        i4 = (ind4) >> (log_gap);
+                        r0 = roots[i1+total_r+m+(m<<1)];
+                        r1 = roots[i2+total_r+m+(m<<1)];
+                        r2 = roots[i3+total_r+m+(m<<1)];
+                        r3 = roots[i4+total_r+m+(m<<1)];
+                        u = arithmetic_.guard(dx0);
+                        v = arithmetic_.mul_root(dx1, r0);
+                        *x0 = arithmetic_.add(u, v);
+                        *x1 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx2);
+                        v = arithmetic_.mul_root(dx3, r1);
+                        *x2 = arithmetic_.add(u, v);
+                        *x3 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx4);
+                        v = arithmetic_.mul_root(dx5, r2);
+                        *x4 = arithmetic_.add(u, v);
+                        *x5 = arithmetic_.sub(u, v);
+
+                        u = arithmetic_.guard(dx6);
+                        v = arithmetic_.mul_root(dx7, r3);
+                        *x6 = arithmetic_.add(u, v);
+                        *x7 = arithmetic_.sub(u, v);
+                    }
+                }    
+
+#endif
 
                 // if (scalar != nullptr)
                 // {
