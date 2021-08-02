@@ -301,7 +301,7 @@ namespace seal
                 ValueType dx0,dx1,dx2,dx3,dx4,dx5,dx6,dx7;
                 //for (; m < (n >> 1); m <<= 1)
                 
-                for (; m < (n);total_r += ((m<<1) + (m<<2) + m), m <<= 3, gap >>= 3, log_gap -= 3)
+                for (; m < (n);m <<= 3, total_r = m, gap >>= 3, log_gap -= 3)
                 {
                     for (std::size_t ind = 0; ind < (n>>3); ind++){
                         auto ind1 = ((ind >> log_gap) << (log_gap + 2)) + (ind & (gap - 1));
@@ -358,10 +358,10 @@ namespace seal
                         i2 = (ind2) >> (log_gap+1);
                         i3 = (ind3) >> (log_gap+1);
                         i4 = (ind4) >> (log_gap+1);
-                        r0 = roots[i1+total_r+m];
-                        r1 = roots[i2+total_r+m];
-                        r2 = roots[i3+total_r+m];
-                        r3 = roots[i4+total_r+m];
+                        r0 = roots[i1+(total_r<<1)];
+                        r1 = roots[i2+(total_r<<1)];
+                        r2 = roots[i3+(total_r<<1)];
+                        r3 = roots[i4+(total_r<<1)];
                         u = arithmetic_.guard(dx0);
                         v = arithmetic_.mul_root(dx2, r0);
                         dx0 = arithmetic_.add(u, v);
@@ -387,10 +387,10 @@ namespace seal
                         i2 = (ind2) >> (log_gap);
                         i3 = (ind3) >> (log_gap);
                         i4 = (ind4) >> (log_gap);
-                        r0 = roots[i1+total_r+m+(m<<1)];
-                        r1 = roots[i2+total_r+m+(m<<1)];
-                        r2 = roots[i3+total_r+m+(m<<1)];
-                        r3 = roots[i4+total_r+m+(m<<1)];
+                        r0 = roots[i1+(total_r<<2)];
+                        r1 = roots[i2+(total_r<<2)];
+                        r2 = roots[i3+(total_r<<2)];
+                        r3 = roots[i4+(total_r<<2)];
                         u = arithmetic_.guard(dx0);
                         v = arithmetic_.mul_root(dx1, r0);
                         *x0 = arithmetic_.add(u, v);
